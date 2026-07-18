@@ -66,12 +66,14 @@ pipenv run python scripts/list_channels.py
 
 ## Architecture
 
-```
-Drive/Trello  ──HTTP──▶  FastAPI (Cloud Run)  ──publish──▶  Pub/Sub topics
-                                                              │
-                                              ┌────────────────┘
-                                              ▼
-                                        downstream push subscribers
+```mermaid
+graph LR
+    Drive[Drive Push] -->|HTTP| Webhook
+    Trello[Trello Webhook] -->|HTTP| Webhook
+    Webhook[FastAPI<br/>Cloud Run] -->|publish| DriveTopic[drive-updated]
+    Webhook -->|publish| TrelloTopic[trello-board-updated]
+    DriveTopic -->|push| Downstream[Downstream<br/>Cloud Run]
+    TrelloTopic -->|push| Downstream
 ```
 
 - `POST /drive/updated` — Drive push notifications. Lists changes via the Drive API, publishes events to the `drive-updated` Pub/Sub topic.
