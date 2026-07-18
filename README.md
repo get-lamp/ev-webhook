@@ -74,6 +74,7 @@ graph LR
     Webhook -->|publish| TrelloTopic[trello-board-updated]
     DriveTopic -->|push| Downstream[Downstream<br/>Cloud Run]
     TrelloTopic -->|push| Downstream
+    Webhook -->|read/write| Firestore[(Firestore<br/>watch channels<br/>file state)]
 ```
 
 - `POST /drive/updated` — Drive push notifications. Lists changes via the Drive API, publishes events to the `drive-updated` Pub/Sub topic.
