@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+httpx = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+asgi-lifespan = "*"
+google-api-python-client = "*"
+google-cloud-firestore = "*"
+google-cloud-pubsub = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-asyncio = "*"
+ruff = "*"
+
+[requires]
+python_version = "3.12"
