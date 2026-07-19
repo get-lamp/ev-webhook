@@ -10,7 +10,7 @@ class DriveUpdatedTopicSchema(BaseModel):
 
     file_id: str
     folder_id: str
-    event: Literal["file_added", "file_removed", "file_renamed"]
+    event: Literal["file_added", "file_removed", "file_renamed", "file_updated"]
 
     # file_added / file_removed
     name: str | None = None

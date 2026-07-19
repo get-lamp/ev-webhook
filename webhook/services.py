@@ -13,9 +13,10 @@ async def handle_drive_updated(channel_id: str, folder_id: str, state: str) -> d
     """Process a Drive push notification.
 
     1. Fetch changes via ``changes.list`` using the stored page token.
-    2. Categorise each change as **added**, **removed**, or **renamed**.
+    2. Categorise each change as **added**, **removed**, **renamed**, or
+       **updated** (content changed, detected by ``md5Checksum``).
     3. Publish the corresponding PubSub event.
-    4. Update the page token and file-name cache in Firestore.
+    4. Update the page token and cache in Firestore.
     """
     drive_conn = drive.connect()
     channel_data = await db.get_doc_data("watch", "drive_channel")
@@ -32,50 +33,71 @@ async def handle_drive_updated(channel_id: str, folder_id: str, state: str) -> d
         logger.info("handle_drive_updated: no changes to process")
         return {"status": "ok", "processed": 0}
 
-    # Load file-name cache: {file_id: name}
+    # Load cache: {file_id: {"name": str, "md5": str}}
     cache = await db.get_doc_data(FILE_STATE_COLLECTION, FILE_STATE_DOC) or {}
 
-    added = removed = renamed = 0
+    added = removed = renamed = updated = 0
 
     for change in changes:
         file_id = change.get("fileId", "")
         removed_flag = change.get("removed", False)
         file_info = change.get("file", {})
         current_name = file_info.get("name", "unknown")
-        cached_name = cache.get(file_id)
+        current_md5 = file_info.get("md5Checksum", "")
+        cached_entry = cache.get(file_id)
 
         if removed_flag:
+            cached_name = cached_entry["name"] if cached_entry else None
             pubsub.publish_drive_file_removed(
                 file_id, cached_name, current_name, folder_id, cache
             )
             removed += 1
 
         elif file_id not in cache:
-            pubsub.publish_drive_file_added(file_id, current_name, folder_id, cache)
+            pubsub.publish_drive_file_added(
+                file_id, current_name, folder_id, current_md5, cache
+            )
             added += 1
 
-        elif cached_name != current_name:
+        elif cached_entry["name"] != current_name:
             pubsub.publish_drive_file_renamed(
-                file_id, cached_name, current_name, folder_id, cache
+                file_id,
+                cached_entry["name"],
+                current_name,
+                folder_id,
+                current_md5,
+                cache,
             )
             renamed += 1
 
+        elif cached_entry["md5"] != current_md5:
+            pubsub.publish_drive_file_updated(
+                file_id, current_name, folder_id, current_md5, cache
+            )
+            updated += 1
+
         else:
-            pubsub.publish_drive_file_unchanged(file_id, current_name, change)
+            logger.info(
+                "handle_drive_updated: file unchanged: file_id=%s name=%s",
+                file_id,
+                current_name,
+            )
 
     # Persist updated cache and page token
     await db.update_doc(FILE_STATE_COLLECTION, FILE_STATE_DOC, cache)
     await db.update_doc("watch", "drive_channel", {"page_token": new_page_token})
 
     logger.info(
-        "handle_drive_updated: processed added=%d removed=%d renamed=%d",
+        "handle_drive_updated: processed added=%d removed=%d renamed=%d updated=%d",
         added,
         removed,
         renamed,
+        updated,
     )
     return {
         "status": "ok",
         "added": added,
         "removed": removed,
         "renamed": renamed,
+        "updated": updated,
     }

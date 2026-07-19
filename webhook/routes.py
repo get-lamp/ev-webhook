@@ -47,11 +47,9 @@ async def drive_updated(request: Request) -> dict:
         logger.warning("drive_watch drive_watch: WATCHED_FOLDER_ID not set")
         return {"status": "error", "reason": "WATCHED_FOLDER_ID not set"}
 
-    await handle_drive_updated(channel_id, folder_id, state)
+    result = await handle_drive_updated(channel_id, folder_id, state)
 
-    return {
-        "status": "ok",
-    }
+    return result
 
 
 @router_trello.post("/updated")

@@ -69,10 +69,22 @@ class PubsubHelper:
             name=self.subscription_path, topic=topic_path
         )
 
+    def __enter__(self) -> "PubsubHelper":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.cleanup()
+
     def pull(self, max_messages: int = 10) -> list:
-        """Pull messages from the subscription and ack them."""
+        """Pull messages from the subscription and ack them.
+
+        Uses ``return_immediately=True`` so the call does not block when
+        no messages have been published (e.g. unchanged-file tests).
+        """
         response = self.subscriber.pull(
-            subscription=self.subscription_path, max_messages=max_messages
+            subscription=self.subscription_path,
+            max_messages=max_messages,
+            return_immediately=True,
         )
         ack_ids = [msg.ack_id for msg in response.received_messages]
         if ack_ids:
@@ -86,6 +98,16 @@ class PubsubHelper:
             self.subscriber.delete_subscription(subscription=self.subscription_path)
         except Exception:
             pass
+
+
+# --- PubSub helper fixture --------------------------------------------------
+
+
+@pytest.fixture
+def pubsub_helper() -> Generator[PubsubHelper, None, None]:
+    """Yield a PubsubHelper for ``drive-updated``, cleaning up afterwards."""
+    with PubsubHelper(TEST_PROJECT, "drive-updated") as helper:
+        yield helper
 
 
 # --- App client -------------------------------------------------------------

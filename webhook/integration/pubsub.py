@@ -42,10 +42,14 @@ def _publish(
 # --- Drive file events (publish + cache update) ------------------------------
 
 
+def _make_entry(name: str, md5: str) -> dict:
+    return {"name": name, "md5": md5}
+
+
 def publish_drive_file_added(
-    file_id: str, name: str, folder_id: str, cache: dict
+    file_id: str, name: str, folder_id: str, md5: str, cache: dict
 ) -> None:
-    """Handle an added file: publish event and record in the file-name cache."""
+    """Handle an added file: publish event and record in the cache."""
     _publish(
         "drive-updated",
         DriveUpdatedTopicSchema(
@@ -56,7 +60,7 @@ def publish_drive_file_added(
         ),
         {"event": "drive_file_added", "file_id": file_id},
     )
-    cache[file_id] = name
+    cache[file_id] = _make_entry(name, md5)
     logger.info("publish_drive_file_added: file_id=%s name=%s", file_id, name)
 
 
@@ -67,7 +71,7 @@ def publish_drive_file_removed(
     folder_id: str,
     cache: dict,
 ) -> None:
-    """Handle a removed file: publish event and drop from the file-name cache."""
+    """Handle a removed file: publish event and drop from the cache."""
     name = cached_name or fallback_name
     _publish(
         "drive-updated",
@@ -88,9 +92,10 @@ def publish_drive_file_renamed(
     old_name: str,
     new_name: str,
     folder_id: str,
+    md5: str,
     cache: dict,
 ) -> None:
-    """Handle a renamed file: publish event and update the file-name cache."""
+    """Handle a renamed file: publish event and update the cache."""
     _publish(
         "drive-updated",
         DriveUpdatedTopicSchema(
@@ -102,7 +107,7 @@ def publish_drive_file_renamed(
         ),
         {"event": "drive_file_renamed", "file_id": file_id},
     )
-    cache[file_id] = new_name
+    cache[file_id] = _make_entry(new_name, md5)
     logger.info(
         "publish_drive_file_renamed: file_id=%s %s → %s",
         file_id,
@@ -111,14 +116,22 @@ def publish_drive_file_renamed(
     )
 
 
-def publish_drive_file_unchanged(file_id: str, name: str, change: dict) -> None:
-    """Log an unhandled change for visibility."""
-    logger.info(
-        "publish_drive_file_unchanged: file_id=%s name=%s change=%s",
-        file_id,
-        name,
-        change,
+def publish_drive_file_updated(
+    file_id: str, name: str, folder_id: str, md5: str, cache: dict
+) -> None:
+    """Handle an updated file: publish event and update the hash in cache."""
+    _publish(
+        "drive-updated",
+        DriveUpdatedTopicSchema(
+            file_id=file_id,
+            name=name,
+            folder_id=folder_id,
+            event="file_updated",
+        ),
+        {"event": "drive_file_updated", "file_id": file_id},
     )
+    cache[file_id]["md5"] = md5
+    logger.info("publish_drive_file_updated: file_id=%s name=%s", file_id, name)
 
 
 # --- Trello events -----------------------------------------------------------
