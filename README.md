@@ -56,6 +56,16 @@ pipenv run uvicorn webhook.main:app --reload --port 8080
 
 On startup the `watched/` folder is created at the project root. Any file change inside it triggers the same `/drive/updated` flow that a real Drive push notification would.
 
+```mermaid
+graph LR
+    Watched[watched/ folder] -->|file events| LocalWatch[localwatch<br/>watchdog observer]
+    LocalWatch -->|POST /drive/updated| Webhook[FastAPI<br/>localhost:8080]
+    Webhook -->|publish| PubsubEmu[Pub/Sub emulator<br/>:8085]
+    Webhook -->|read/write| FirestoreEmu[Firestore emulator<br/>:8556]
+    LocalDrive[localdrive<br/>list_changes] -->|scan hashes| Watched
+    Webhook -->|call| LocalDrive
+```
+
 ## Docker Compose
 
 Starts everything in containers — Pub/Sub emulator, Firestore emulator, and the webhook app:
