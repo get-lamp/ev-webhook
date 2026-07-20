@@ -2,13 +2,28 @@
 
 FastAPI service that receives Drive push notifications and Trello webhooks, then publishes events to Pub/Sub topics for downstream processing.
 
+Two runtime modes:
+
+| Mode | `ENVIRONMENT` | Drive | Firestore | Pub/Sub |
+|---|---|---|---|---|
+| **gcp** (production) | `gcp` | Google Drive API | Cloud Firestore | Cloud Pub/Sub |
+| **local** (development) | `local` | `localdrive` — watches a local folder | Firestore emulator | Pub/Sub emulator |
+
+The mode is selected by the `ENVIRONMENT` variable. All code paths are identical — `localdrive`, `localwatch`, and the emulators are drop-in replacements that get swapped in at import time.
+
 ## Prerequisites
 
 - Python 3.12
 - [pipenv](https://pipenv.pypa.io/)
-- Docker (for deploys)
-- `gcloud` CLI with Pub/Sub emulator component (for tests)
-- Authenticated GCP credentials (`gcloud auth application-default login`)
+- Docker (for deploys and local dev with docker-compose)
+- `gcloud` CLI (for emulators and deploys)
+
+Install the emulator components (one-time):
+
+```bash
+gcloud components install pubsub-emulator
+gcloud components install firestore-emulator
+```
 
 ## Install
 
@@ -16,19 +31,54 @@ FastAPI service that receives Drive push notifications and Trello webhooks, then
 pipenv install --dev
 ```
 
-Copy the `.env` file and fill in the required values:
+The `.env` file holds secrets and GCP-specific config. It is **not** needed for local mode when using docker-compose (which sets the required variables itself).
+
+## Run locally (with emulators)
+
+Set `ENVIRONMENT=local` and start the two emulators, then the app:
 
 ```bash
-cp .env.example .env  # or create .env manually
-```
+# Terminal 1 — Pub/Sub emulator (port 8085)
+gcloud beta emulators pubsub start --project=test-project
 
-Required variables: `WEBHOOK_URL`, `WATCH_FOLDER_ID`, `TRELLO_API_KEY`, `TRELLO_API_SECRET`, `TRELLO_BOARD_ID`. Optional: `GCP_PROJECT_ID` (set to publish to Pub/Sub).
+# Terminal 2 — Firestore emulator (port 8556)
+gcloud beta emulators firestore start --host-port=localhost:8556
 
-## Run locally
-
-```bash
+# Terminal 3 — the app
+ENVIRONMENT=local \
+PUBSUB_EMULATOR_HOST=localhost:8085 \
+FIRESTORE_EMULATOR_HOST=localhost:8556 \
+GCP_PROJECT_ID=test-project \
+WATCH_FOLDER_ID=watched \
+WEBHOOK_URL=http://localhost:8080 \
 pipenv run uvicorn webhook.main:app --reload --port 8080
 ```
+
+On startup the `watched/` folder is created at the project root. Any file change inside it triggers the same `/drive/updated` flow that a real Drive push notification would.
+
+## Docker Compose
+
+Starts everything in containers — Pub/Sub emulator, Firestore emulator, and the webhook app:
+
+```bash
+make docker-up
+# or: docker compose up -d --build
+```
+
+Code is volume-mounted with `--reload` for hot-reload. The `watched/` folder is created automatically.
+
+To also run the **workshop** downstream service:
+
+```bash
+# Start webhook + emulators first
+docker compose up -d --build
+
+# Then in the workshop repo
+cd ../workshop
+docker compose up -d
+```
+
+Both projects share the `aibiz-local-dev` Docker network. The workshop reaches the emulators at `pubsub:8085` and `firestore:8556`.
 
 ## Tests
 
@@ -36,11 +86,7 @@ pipenv run uvicorn webhook.main:app --reload --port 8080
 make test
 ```
 
-Starts the Pub/Sub emulator, runs the test suite, and cleans up. Requires `gcloud beta emulators pubsub` to be installed.
-
-```bash
-gcloud components install pubsub-emulator   # one-time
-```
+Starts the Pub/Sub emulator (Firestore is mocked), runs the test suite, and cleans up.
 
 ## Lint
 
@@ -56,8 +102,6 @@ Runs ruff format and check with auto-fix.
 |---|---|
 | `scripts/inspect_drive.py` | Inspect the watched folder — shows metadata and lists files |
 | `scripts/list_channels.py` | Show the active Drive watch channel stored in Firestore |
-
-Run with:
 
 ```bash
 pipenv run python scripts/inspect_drive.py

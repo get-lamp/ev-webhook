@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     WATCH_FOLDER_ID: str
     GCP_PROJECT_ID: str = ""
 
+    ENVIRONMENT: str = "gcp"
+
     TRELLO_API_KEY: str
     TRELLO_API_SECRET: str
     TRELLO_BOARD_ID: str

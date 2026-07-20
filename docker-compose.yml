@@ -1,0 +1,50 @@
+services:
+  pubsub:
+    image: google/cloud-sdk:latest
+    container_name: webhook-pubsub
+    command: >
+      gcloud beta emulators pubsub start
+        --project=test-project
+        --host-port=0.0.0.0:8085
+    networks:
+      - local-dev
+
+  firestore:
+    image: google/cloud-sdk:latest
+    container_name: webhook-firestore
+    command: >
+      gcloud beta emulators firestore start
+        --host-port=0.0.0.0:8556
+    networks:
+      - local-dev
+
+  webhook:
+    build: .
+    container_name: webhook-app
+    env_file:
+      - .env
+    environment:
+      ENVIRONMENT: local
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+      FIRESTORE_EMULATOR_HOST: firestore:8556
+      GCP_PROJECT_ID: test-project
+      WATCH_FOLDER_ID: watched
+      WEBHOOK_URL: http://localhost:8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    depends_on:
+      - pubsub
+      - firestore
+    networks:
+      - local-dev
+    command: >
+      uvicorn webhook.main:app
+        --host 0.0.0.0
+        --port 8080
+        --reload
+
+networks:
+  local-dev:
+    name: aibiz-local-dev

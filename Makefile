@@ -2,7 +2,7 @@ PROJECT    := workshop-502013
 SA_NAME    := workshop
 SA_EMAIL   := $(SA_NAME)@$(PROJECT).iam.gserviceaccount.com
 
-.PHONY: lint test init setup
+.PHONY: lint test init setup docker-up docker-down
 
 lint:
 	pipenv run ruff format .
@@ -17,6 +17,14 @@ test:
 		sleep 0.5; \
 	done; \
 	PUBSUB_EMULATOR_HOST=localhost:8085 pipenv run pytest . -v
+
+# --- Docker -------------------------------------------------------------------
+
+docker-up:
+	docker compose up -d --build
+
+docker-down:
+	docker compose down
 
 # --- GCP service account (run once) ------------------------------------------
 

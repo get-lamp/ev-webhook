@@ -78,13 +78,13 @@ class PubsubHelper:
     def pull(self, max_messages: int = 10) -> list:
         """Pull messages from the subscription and ack them.
 
-        Uses ``return_immediately=True`` so the call does not block when
-        no messages have been published (e.g. unchanged-file tests).
+        Uses a short timeout so the call does not block when no messages
+        have been published (e.g. unchanged-file tests).
         """
         response = self.subscriber.pull(
             subscription=self.subscription_path,
             max_messages=max_messages,
-            return_immediately=True,
+            timeout=2.0,
         )
         ack_ids = [msg.ack_id for msg in response.received_messages]
         if ack_ids:

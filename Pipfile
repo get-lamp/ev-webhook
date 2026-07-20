@@ -11,6 +11,7 @@ asgi-lifespan = "*"
 google-api-python-client = "*"
 google-cloud-firestore = "*"
 google-cloud-pubsub = "*"
+watchdog = "*"
 
 [dev-packages]
 pytest = "*"
