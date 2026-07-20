@@ -31,7 +31,7 @@ class TrelloWebhookData(BaseModel):
 
 def _auth_params() -> dict[str, str]:
     """Return the key and token query params required by every Trello API call."""
-    return {"key": settings.TRELLO_API_KEY, "token": settings.TRELLO_API_SECRET}
+    return {"key": settings.TRELLO_API_KEY, "token": settings.TRELLO_API_TOKEN}
 
 
 async def list_webhooks() -> list[dict]:
@@ -40,7 +40,7 @@ async def list_webhooks() -> list[dict]:
     GET /1/tokens/{token}/webhooks
     """
     params = _auth_params()
-    url = f"{TRELLO_API_BASE}/tokens/{settings.TRELLO_API_SECRET}/webhooks"
+    url = f"{TRELLO_API_BASE}/tokens/{settings.TRELLO_API_TOKEN}/webhooks"
 
     async with AsyncClient() as client:
         resp = await client.get(url, params=params)
@@ -127,7 +127,7 @@ async def create_trello_webhook() -> bool:
 
     Returns True on success, False on failure.
     """
-    callback_url = f"{settings.WEBHOOK_URL.rstrip('/')}/webhooks/trello/updated"
+    callback_url = settings.TRELLO_WEBHOOK_URL
 
     logger.info(
         "create_trello_webhook: board=%s callback=%s",

@@ -16,6 +16,18 @@ logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
+
+def seed_snapshot() -> None:
+    """Take the initial snapshot so ``list_changes`` detects only future changes.
+
+    Must be called once at startup, before the file watcher begins firing.
+    """
+    global _last_snapshot
+
+    folder = _resolve_folder()
+    _last_snapshot = _scan_folder(folder)
+    logger.info("localdrive: seeded snapshot (%d files)", len(_last_snapshot))
+
 # Module-level snapshot so list_changes can compute a diff between calls.
 # {path: {"name": str, "md5": str}}
 _last_snapshot: dict[str, dict] = {}
@@ -44,14 +56,15 @@ async def list_changes(
 
     changes: list[dict] = []
 
-    if page_token is None and not _last_snapshot:
-        # First call ever — just seed the snapshot, return no changes.
+    if not _last_snapshot:
+        # Snapshot never seeded (shouldn't happen — create_watch_channel
+        # calls seed_snapshot at startup).  Seed now and return empty to
+        # avoid spurious events.
         _last_snapshot.update(snapshot)
         new_token = str(int(time.time() * 1000))
-        logger.info(
-            "localdrive: initial snapshot (%d files) token=%s",
+        logger.warning(
+            "localdrive: snapshot was not seeded — seeding now (%d files)",
             len(snapshot),
-            new_token,
         )
         return {"changes": [], "newStartPageToken": new_token}
 
@@ -128,10 +141,7 @@ async def get_file_metadata(drive_conn: None, file_id: str) -> dict:
 def _resolve_folder() -> Path:
     from webhook.config import settings
 
-    folder_id = settings.WATCH_FOLDER_ID.strip()
-    if not folder_id:
-        folder_id = "watched"
-    folder = Path(folder_id)
+    folder = Path(settings.WATCH_FOLDER_LOCAL.strip())
     if not folder.is_absolute():
         folder = _PROJECT_ROOT / folder
     folder.mkdir(parents=True, exist_ok=True)

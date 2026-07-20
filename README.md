@@ -49,7 +49,7 @@ ENVIRONMENT=local \
 PUBSUB_EMULATOR_HOST=localhost:8085 \
 FIRESTORE_EMULATOR_HOST=localhost:8556 \
 GCP_PROJECT_ID=test-project \
-WATCH_FOLDER_ID=watched \
+WATCH_FOLDER_LOCAL=watched \
 WEBHOOK_URL=http://localhost:8080 \
 pipenv run uvicorn webhook.main:app --reload --port 8080
 ```

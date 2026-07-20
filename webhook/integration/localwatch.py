@@ -62,11 +62,10 @@ async def create_watch_channel(
 ) -> bool:
     """Start a watchdog observer on the local folder.
 
-    On any file event the observer debounces then POSTs to
-    ``{webhook_url}/drive/updated`` so the app processes the change
-    through the normal request path.
+    On any file event the observer debounces then POSTs to *webhook_url*
+    so the app processes the change through the normal request path.
     """
-    from webhook.integration.localdrive import _resolve_folder
+    from webhook.integration.localdrive import _resolve_folder, seed_snapshot
 
     global _observer
 
@@ -87,6 +86,10 @@ async def create_watch_channel(
     with _observer_lock:
         _observer = obs
         obs.start()
+
+    # Seed the file snapshot so the first list_changes call detects
+    # only files added/removed after this point.
+    seed_snapshot()
 
     # Persist channel info in Firestore
     now_iso = datetime.now(UTC).replace(microsecond=0).isoformat()
@@ -133,7 +136,7 @@ class _DebouncedHandler(FileSystemEventHandler):
     """Coalesce rapid file events into a single HTTP POST."""
 
     def __init__(self, webhook_url: str, channel_id: str) -> None:
-        self._webhook_url = webhook_url.rstrip("/")
+        self._webhook_url = webhook_url
         self._channel_id = channel_id
 
     # -- watchdog callbacks -------------------------------------------------
@@ -166,7 +169,7 @@ class _DebouncedHandler(FileSystemEventHandler):
             _debounce_timer.start()
 
     def _fire(self) -> None:
-        url = f"{self._webhook_url}/drive/updated"
+        url = self._webhook_url
         headers = {
             "X-Goog-Resource-State": "change",
             "X-Goog-Channel-ID": self._channel_id,

@@ -13,14 +13,19 @@ class Settings(BaseSettings):
         extra="forbid",
     )
 
-    WEBHOOK_URL: str
+    DRIVE_WEBHOOK_URL: str
+    TOPIC_BLUEPRINT_PUSH_URL: str
+    TRELLO_WEBHOOK_URL: str
     WATCH_FOLDER_ID: str
     GCP_PROJECT_ID: str = ""
 
-    ENVIRONMENT: str = "gcp"
+    ENVIRONMENT: str
 
+    WATCH_FOLDER_LOCAL: str = "/tmp/blueprints"
+
+    TRELLO_API_TOKEN: str
     TRELLO_API_KEY: str
-    TRELLO_API_SECRET: str
+    TRELLO_API_SECRET: str = ""
     TRELLO_BOARD_ID: str
 
 

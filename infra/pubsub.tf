@@ -1,9 +1,12 @@
+# Look up the workshop service account for PubSub OIDC push authentication.
+data "google_service_account" "workshop" {
+  account_id = var.workshop_service_account_id
+}
+
 # Push subscriptions — deliver messages to downstream Cloud Run endpoints.
-# Created only after the downstream service is deployed and push_endpoint_url is known.
-# Set push_endpoint_url in terraform.tfvars and re-run `terraform apply`.
 
 resource "google_pubsub_subscription" "drive_updated_push" {
-  count = var.push_endpoint_url != "" ? 1 : 0
+  count = var.drive_push_endpoint_url != "" ? 1 : 0
 
   name  = "drive-updated-push"
   topic = google_pubsub_topic.drive_updated.name
@@ -11,16 +14,16 @@ resource "google_pubsub_subscription" "drive_updated_push" {
   ack_deadline_seconds = 600
 
   push_config {
-    push_endpoint = var.push_endpoint_url
+    push_endpoint = var.drive_push_endpoint_url
 
     oidc_token {
-      service_account_email = google_service_account.workshop.email
+      service_account_email = data.google_service_account.workshop.email
     }
   }
 }
 
 resource "google_pubsub_subscription" "trello_board_updated_push" {
-  count = var.push_endpoint_url != "" ? 1 : 0
+  count = var.trello_push_endpoint_url != "" ? 1 : 0
 
   name  = "trello-board-updated-push"
   topic = google_pubsub_topic.trello_board_updated.name
@@ -28,10 +31,10 @@ resource "google_pubsub_subscription" "trello_board_updated_push" {
   ack_deadline_seconds = 600
 
   push_config {
-    push_endpoint = var.push_endpoint_url
+    push_endpoint = var.trello_push_endpoint_url
 
     oidc_token {
-      service_account_email = google_service_account.workshop.email
+      service_account_email = data.google_service_account.workshop.email
     }
   }
 }

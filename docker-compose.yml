@@ -6,6 +6,12 @@ services:
       gcloud beta emulators pubsub start
         --project=test-project
         --host-port=0.0.0.0:8085
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8085)); s.close()"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
     networks:
       - local-dev
 
@@ -15,6 +21,12 @@ services:
     command: >
       gcloud beta emulators firestore start
         --host-port=0.0.0.0:8556
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8556)); s.close()"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
     networks:
       - local-dev
 
@@ -28,15 +40,20 @@ services:
       PUBSUB_EMULATOR_HOST: pubsub:8085
       FIRESTORE_EMULATOR_HOST: firestore:8556
       GCP_PROJECT_ID: test-project
-      WATCH_FOLDER_ID: watched
-      WEBHOOK_URL: http://localhost:8080
+      WATCH_FOLDER_LOCAL: /data
+      DRIVE_WEBHOOK_URL: http://localhost:8080/drive/updated
+      TOPIC_BLUEPRINT_PUSH_URL: http://workshop-app:8000/blueprints/files-updated
+      TRELLO_WEBHOOK_URL: http://localhost:8080/trello/updated
     ports:
       - "8080:8080"
     volumes:
       - .:/app
+      - ../watched:/data
     depends_on:
-      - pubsub
-      - firestore
+      pubsub:
+        condition: service_healthy
+      firestore:
+        condition: service_healthy
     networks:
       - local-dev
     command: >

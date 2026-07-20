@@ -12,6 +12,7 @@ google-api-python-client = "*"
 google-cloud-firestore = "*"
 google-cloud-pubsub = "*"
 watchdog = "*"
+pydantic-settings = "*"
 
 [dev-packages]
 pytest = "*"

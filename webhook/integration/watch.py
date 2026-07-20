@@ -46,7 +46,6 @@ def channel_expired(channel_data: WatchChannelData):
 
 async def create_watch_channel(drive, webhook_url, watch_folder_id) -> bool:
     new_channel_id = str(uuid.uuid4())
-    webhook_url = f"{webhook_url.rstrip('/')}/webhooks/drive-updated"
     now_ms = int(time.time() * 1000)
 
     logger.info(

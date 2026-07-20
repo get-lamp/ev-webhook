@@ -11,6 +11,10 @@ from webhook.schemas import DriveUpdatedTopicSchema
 logger = logging.getLogger(__name__)
 
 
+async def ensure_topics() -> None:
+    """No-op in production — topics are managed by Terraform."""
+
+
 def _publish(
     topic_name: str, payload: BaseModel, attributes: dict | None = None
 ) -> int:
