@@ -28,7 +28,9 @@ async def watch():
     # --- Drive watch channel ---
     cnx = connect()
 
-    await create_watch_channel(cnx, settings.DRIVE_WEBHOOK_URL, settings.WATCH_FOLDER_ID)
+    await create_watch_channel(
+        cnx, settings.DRIVE_WEBHOOK_URL, settings.WATCH_FOLDER_ID
+    )
 
     # --- Trello webhook ---
     if settings.ENVIRONMENT == "local":

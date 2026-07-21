@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import time
 from pathlib import Path
 
@@ -28,6 +27,7 @@ def seed_snapshot() -> None:
     _last_snapshot = _scan_folder(folder)
     logger.info("localdrive: seeded snapshot (%d files)", len(_last_snapshot))
 
+
 # Module-level snapshot so list_changes can compute a diff between calls.
 # {path: {"name": str, "md5": str}}
 _last_snapshot: dict[str, dict] = {}
@@ -41,15 +41,12 @@ def connect() -> None:
     return None
 
 
-async def list_changes(
-    drive_conn: None, page_token: str | None = None
-) -> dict:
+async def list_changes(drive_conn: None, page_token: str | None = None) -> dict:
     """Scan the local watched folder and return changes since the last call.
 
     *page_token* is ignored — diffs are always relative to the previous
     ``list_changes`` call tracked in the module-level snapshot.
     """
-    from webhook.config import settings
 
     folder = _resolve_folder()
     snapshot = _scan_folder(folder)
@@ -60,13 +57,9 @@ async def list_changes(
     for path, info in snapshot.items():
         old = _last_snapshot.get(path)
         if old is None:
-            changes.append(
-                _make_change(path, info["name"], info["md5"], removed=False)
-            )
+            changes.append(_make_change(path, info["name"], info["md5"], removed=False))
         elif old["md5"] != info["md5"]:
-            changes.append(
-                _make_change(path, info["name"], info["md5"], removed=False)
-            )
+            changes.append(_make_change(path, info["name"], info["md5"], removed=False))
 
     # --- detect removals ---
     for path, old in _last_snapshot.items():

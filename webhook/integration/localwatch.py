@@ -117,9 +117,7 @@ async def create_watch_channel(
     return True
 
 
-async def stop_watch_channel(
-    drive_conn: None, channel_id: str | None = None
-) -> bool:
+async def stop_watch_channel(drive_conn: None, channel_id: str | None = None) -> bool:
     """Stop the running observer, if any."""
     global _observer
 

@@ -8,7 +8,6 @@ Topic creation is still done against the emulator so that anything pulling
 from it (e.g. tests) finds the expected resources.
 """
 
-import json
 import logging
 import os
 
@@ -53,7 +52,9 @@ def _post_to_workshop(payload: BaseModel) -> None:
     body = payload.model_dump_json(exclude_none=True)
     try:
         with httpx.Client(timeout=10) as client:
-            resp = client.post(push_url, content=body, headers={"Content-Type": "application/json"})
+            resp = client.post(
+                push_url, content=body, headers={"Content-Type": "application/json"}
+            )
         logger.info("_post_to_workshop: POST %s → %d", push_url, resp.status_code)
     except Exception:
         logger.exception("_post_to_workshop: POST %s failed", push_url)

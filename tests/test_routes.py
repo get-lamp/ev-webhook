@@ -99,9 +99,7 @@ async def test_health_returns_200(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_file_added(
-    client: AsyncClient, pubsub_helper: PubsubHelper
-) -> None:
+async def test_file_added(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -141,9 +139,7 @@ async def test_file_added(
 
 
 @pytest.mark.asyncio
-async def test_file_removed(
-    client: AsyncClient, pubsub_helper: PubsubHelper
-) -> None:
+async def test_file_removed(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -183,9 +179,7 @@ async def test_file_removed(
 
 
 @pytest.mark.asyncio
-async def test_file_renamed(
-    client: AsyncClient, pubsub_helper: PubsubHelper
-) -> None:
+async def test_file_renamed(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -228,9 +222,7 @@ async def test_file_renamed(
 
 
 @pytest.mark.asyncio
-async def test_file_updated(
-    client: AsyncClient, pubsub_helper: PubsubHelper
-) -> None:
+async def test_file_updated(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -279,9 +271,7 @@ async def test_file_updated(
 
 
 @pytest.mark.asyncio
-async def test_file_unchanged(
-    client: AsyncClient, pubsub_helper: PubsubHelper
-) -> None:
+async def test_file_unchanged(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
