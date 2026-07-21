@@ -25,6 +25,12 @@ gcloud components install pubsub-emulator
 gcloud components install firestore-emulator
 ```
 
+Inspect local firestore database at
+```
+http://localhost:8556/v1/projects/test-project/databases/(default)/documents/watch?pageSize=10
+```
+
+
 ## Install
 
 ```bash

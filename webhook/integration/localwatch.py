@@ -16,6 +16,12 @@ from datetime import UTC, datetime
 
 import httpx
 from pydantic import BaseModel
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -65,7 +71,7 @@ async def create_watch_channel(
     On any file event the observer debounces then POSTs to *webhook_url*
     so the app processes the change through the normal request path.
     """
-    from webhook.integration.localdrive import _resolve_folder, seed_snapshot
+    from webhook.integration.localdrive import _resolve_folder
 
     global _observer
 
@@ -87,9 +93,10 @@ async def create_watch_channel(
         _observer = obs
         obs.start()
 
-    # Seed the file snapshot so the first list_changes call detects
-    # only files added/removed after this point.
-    seed_snapshot()
+    # Trigger an initial scan so files added while the server was offline
+    # are processed.  Schedules a debounced POST — mirroring how Google
+    # Drive delivers an async "sync" notification after channel creation.
+    handler._schedule()
 
     # Persist channel info in Firestore
     now_iso = datetime.now(UTC).replace(microsecond=0).isoformat()
@@ -176,8 +183,16 @@ class _DebouncedHandler(FileSystemEventHandler):
         }
         logger.info("localwatch: POST %s", url)
         try:
-            with httpx.Client(timeout=10) as client:
-                resp = client.post(url, headers=headers)
-            logger.info("localwatch: POST %s → %d", url, resp.status_code)
-        except Exception:
-            logger.exception("localwatch: POST %s failed", url)
+            self._post_with_retry(url, headers)
+        except httpx.ConnectError:
+            logger.exception("localwatch: POST %s failed after retries", url)
+
+    @retry(
+        retry=retry_if_exception_type(httpx.ConnectError),
+        stop=stop_after_attempt(30),
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=5),
+    )
+    def _post_with_retry(self, url: str, headers: dict) -> None:
+        with httpx.Client(timeout=10) as client:
+            resp = client.post(url, headers=headers)
+        logger.info("localwatch: POST %s → %d", url, resp.status_code)

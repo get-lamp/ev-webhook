@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 fastapi = "*"
 httpx = "*"
+tenacity = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 asgi-lifespan = "*"
 google-api-python-client = "*"

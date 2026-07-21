@@ -56,18 +56,6 @@ async def list_changes(
 
     changes: list[dict] = []
 
-    if not _last_snapshot:
-        # Snapshot never seeded (shouldn't happen — create_watch_channel
-        # calls seed_snapshot at startup).  Seed now and return empty to
-        # avoid spurious events.
-        _last_snapshot.update(snapshot)
-        new_token = str(int(time.time() * 1000))
-        logger.warning(
-            "localdrive: snapshot was not seeded — seeding now (%d files)",
-            len(snapshot),
-        )
-        return {"changes": [], "newStartPageToken": new_token}
-
     # --- detect additions and updates ---
     for path, info in snapshot.items():
         old = _last_snapshot.get(path)

@@ -12,10 +12,16 @@ async def get_doc(collection, document="default"):
     return db.collection(collection).document(document)
 
 
-async def update_doc(collection, document, data):
+async def update_doc(collection, document, data, replace: bool = False):
+    """Set fields on a Firestore document.
+
+    By default *data* is merged into the existing document.  Pass
+    ``replace=True`` to overwrite the entire document so that keys absent
+    from *data* are removed.
+    """
     db = await connect()
     doc_ref = db.collection(collection).document(document)
-    doc_ref.set(data, merge=True)
+    doc_ref.set(data, merge=not replace)
 
 
 async def get_doc_data(collection, document="default") -> dict | None:

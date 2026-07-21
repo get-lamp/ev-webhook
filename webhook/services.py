@@ -83,8 +83,9 @@ async def handle_drive_updated(channel_id: str, folder_id: str, state: str) -> d
                 current_name,
             )
 
-    # Persist updated cache and page token
-    await db.update_doc(FILE_STATE_COLLECTION, FILE_STATE_DOC, cache)
+    # Persist updated cache and page token.
+    # Replace (not merge) so that cache.pop() removals are actually deleted.
+    await db.update_doc(FILE_STATE_COLLECTION, FILE_STATE_DOC, cache, replace=True)
     await db.update_doc("watch", "drive_channel", {"page_token": new_page_token})
 
     logger.info(

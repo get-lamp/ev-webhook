@@ -6,6 +6,12 @@ services:
       gcloud beta emulators pubsub start
         --project=test-project
         --host-port=0.0.0.0:8085
+    environment:
+      JAVA_TOOL_OPTIONS: "-Djava.util.logging.config.file=/tmp/logging.properties -Dio.netty.leakDetection.level=DISABLED"
+    ports:
+      - "8085:8085"
+    volumes:
+      - ./infra/logging.properties:/tmp/logging.properties:ro
     healthcheck:
       test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8085)); s.close()"]
       interval: 2s
@@ -21,6 +27,12 @@ services:
     command: >
       gcloud beta emulators firestore start
         --host-port=0.0.0.0:8556
+    environment:
+      JAVA_TOOL_OPTIONS: "-Djava.util.logging.config.file=/tmp/logging.properties -Dio.netty.leakDetection.level=DISABLED"
+    ports:
+      - "8556:8556"
+    volumes:
+      - ./infra/logging.properties:/tmp/logging.properties:ro
     healthcheck:
       test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8556)); s.close()"]
       interval: 2s
