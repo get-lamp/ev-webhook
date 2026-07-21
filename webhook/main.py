@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from webhook import setup
 
 logger = logging.getLogger("workshop")
+logger.setLevel(logging.INFO)
 
 
 @asynccontextmanager
