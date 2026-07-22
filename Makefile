@@ -1,3 +1,5 @@
+SERVICE := webhook
+
 PROJECT    := workshop-502013
 SA_NAME    := workshop
 SA_EMAIL   := $(SA_NAME)@$(PROJECT).iam.gserviceaccount.com
@@ -12,7 +14,7 @@ test:
 	@echo "Starting NATS..."
 	docker compose up -d nats
 	@for i in $$(seq 1 20); do \
-		docker compose exec -T nats nats server check -a localhost:4222 >/dev/null 2>&1 && break; \
+		docker compose exec -T nats nc -z localhost 4222 >/dev/null 2>&1 && break; \
 		sleep 0.5; \
 	done
 	NATS_URL=nats://localhost:4222 pipenv run pytest . -v
@@ -48,3 +50,6 @@ login:
 setup:
 	@test -f $(HOME)/.config/gcloud/application_default_credentials.json \
 		|| { echo "ERROR: ADC not found — run 'make login' first"; exit 1; }
+
+del:
+	sudo docker images -q --filter=reference='*$(SERVICE)*' | xargs -r sudo docker rmi -f

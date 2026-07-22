@@ -1,12 +1,12 @@
 services:
   nats:
-    image: nats:latest
+    image: nats:alpine
     container_name: webhook-nats
     command: "--js"
     ports:
       - "4222:4222"
     healthcheck:
-      test: ["CMD", "nats", "server", "check", "-a", "localhost:4222"]
+      test: ["CMD-SHELL", "nc -z localhost 4222"]
       interval: 2s
       timeout: 5s
       retries: 15
