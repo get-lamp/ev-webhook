@@ -48,19 +48,19 @@ async def handle_drive_updated(channel_id: str, folder_id: str, state: str) -> d
 
         if removed_flag:
             cached_name = cached_entry["name"] if cached_entry else None
-            pubsub.publish_drive_file_removed(
+            await pubsub.publish_drive_file_removed(
                 file_id, cached_name, current_name, folder_id, cache
             )
             removed += 1
 
         elif file_id not in cache:
-            pubsub.publish_drive_file_added(
+            await pubsub.publish_drive_file_added(
                 file_id, current_name, folder_id, current_md5, cache
             )
             added += 1
 
         elif cached_entry["name"] != current_name:
-            pubsub.publish_drive_file_renamed(
+            await pubsub.publish_drive_file_renamed(
                 file_id,
                 cached_entry["name"],
                 current_name,
@@ -71,7 +71,7 @@ async def handle_drive_updated(channel_id: str, folder_id: str, state: str) -> d
             renamed += 1
 
         elif cached_entry["md5"] != current_md5:
-            pubsub.publish_drive_file_updated(
+            await pubsub.publish_drive_file_updated(
                 file_id, current_name, folder_id, current_md5, cache
             )
             updated += 1

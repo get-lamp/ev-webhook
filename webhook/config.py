@@ -23,6 +23,8 @@ class Settings(BaseSettings):
 
     WATCH_FOLDER_LOCAL: str = "/tmp/blueprints"
 
+    NATS_URL: str = "nats://localhost:4222"
+
     TRELLO_API_TOKEN: str
     TRELLO_API_KEY: str
     TRELLO_API_SECRET: str = ""

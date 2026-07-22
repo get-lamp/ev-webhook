@@ -9,14 +9,14 @@ lint:
 	pipenv run ruff check --fix
 
 test:
-	@gcloud beta emulators pubsub start --project=test-project --quiet &>/dev/null & \
-	PID=$$!; \
-	trap 'kill $$PID 2>/dev/null; wait $$PID 2>/dev/null' EXIT; \
-	for i in $$(seq 1 20); do \
-		curl -s http://localhost:8085 >/dev/null 2>&1 && break; \
+	@echo "Starting NATS..."
+	docker compose up -d nats
+	@for i in $$(seq 1 20); do \
+		docker compose exec -T nats nats server check -a localhost:4222 >/dev/null 2>&1 && break; \
 		sleep 0.5; \
-	done; \
-	PUBSUB_EMULATOR_HOST=localhost:8085 pipenv run pytest . -v
+	done
+	NATS_URL=nats://localhost:4222 pipenv run pytest . -v
+	@docker compose down nats
 
 # --- Docker -------------------------------------------------------------------
 

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 from httpx import AsyncClient
 
-from tests.conftest import PubsubHelper
+from tests.conftest import NatsHelper
 
 # --- Sample Drive changes.list responses ------------------------------------
 
@@ -99,7 +99,7 @@ async def test_health_returns_200(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_file_added(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
+async def test_file_added(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -116,22 +116,23 @@ async def test_file_added(client: AsyncClient, pubsub_helper: PubsubHelper) -> N
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
-        msgs = pubsub_helper.pull()
+        msgs = await nats_helper.pull()
         assert len(msgs) == 1
-        data = json.loads(msgs[0].message.data)
+        data = json.loads(msgs[0].data)
         assert data == {
             "file_id": "abc123",
             "name": "new_file.txt",
             "folder_id": FOLDER_ID,
             "event": "file_added",
         }
-        assert msgs[0].message.attributes["event"] == "drive_file_added"
-        assert msgs[0].message.attributes["file_id"] == "abc123"
+        assert msgs[0].headers["event"] == "drive_file_added"
+        assert msgs[0].headers["file_id"] == "abc123"
 
         assert mock_update_doc.call_args_list[0] == call(
             "watch",
             "drive_file_state",
             {"abc123": {"name": "new_file.txt", "md5": "abc111"}},
+            replace=True,
         )
 
 
@@ -139,7 +140,7 @@ async def test_file_added(client: AsyncClient, pubsub_helper: PubsubHelper) -> N
 
 
 @pytest.mark.asyncio
-async def test_file_removed(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
+async def test_file_removed(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -159,19 +160,19 @@ async def test_file_removed(client: AsyncClient, pubsub_helper: PubsubHelper) ->
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
-        msgs = pubsub_helper.pull()
+        msgs = await nats_helper.pull()
         assert len(msgs) == 1
-        data = json.loads(msgs[0].message.data)
+        data = json.loads(msgs[0].data)
         assert data == {
             "file_id": "def456",
             "name": "old_file.txt",
             "folder_id": FOLDER_ID,
             "event": "file_removed",
         }
-        assert msgs[0].message.attributes["event"] == "drive_file_removed"
+        assert msgs[0].headers["event"] == "drive_file_removed"
 
         assert mock_update_doc.call_args_list[0] == call(
-            "watch", "drive_file_state", {}
+            "watch", "drive_file_state", {}, replace=True
         )
 
 
@@ -179,7 +180,7 @@ async def test_file_removed(client: AsyncClient, pubsub_helper: PubsubHelper) ->
 
 
 @pytest.mark.asyncio
-async def test_file_renamed(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
+async def test_file_renamed(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -199,9 +200,9 @@ async def test_file_renamed(client: AsyncClient, pubsub_helper: PubsubHelper) ->
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
-        msgs = pubsub_helper.pull()
+        msgs = await nats_helper.pull()
         assert len(msgs) == 1
-        data = json.loads(msgs[0].message.data)
+        data = json.loads(msgs[0].data)
         assert data == {
             "file_id": "ghi789",
             "old_name": "old_name.txt",
@@ -209,12 +210,13 @@ async def test_file_renamed(client: AsyncClient, pubsub_helper: PubsubHelper) ->
             "folder_id": FOLDER_ID,
             "event": "file_renamed",
         }
-        assert msgs[0].message.attributes["event"] == "drive_file_renamed"
+        assert msgs[0].headers["event"] == "drive_file_renamed"
 
         assert mock_update_doc.call_args_list[0] == call(
             "watch",
             "drive_file_state",
             {"ghi789": {"name": "renamed_file.txt", "md5": "ghi333"}},
+            replace=True,
         )
 
 
@@ -222,7 +224,7 @@ async def test_file_renamed(client: AsyncClient, pubsub_helper: PubsubHelper) ->
 
 
 @pytest.mark.asyncio
-async def test_file_updated(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
+async def test_file_updated(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -248,22 +250,23 @@ async def test_file_updated(client: AsyncClient, pubsub_helper: PubsubHelper) ->
             "updated": 1,
         }
 
-        msgs = pubsub_helper.pull()
+        msgs = await nats_helper.pull()
         assert len(msgs) == 1
-        data = json.loads(msgs[0].message.data)
+        data = json.loads(msgs[0].data)
         assert data == {
             "file_id": "jkl012",
             "name": "existing_file.txt",
             "folder_id": FOLDER_ID,
             "event": "file_updated",
         }
-        assert msgs[0].message.attributes["event"] == "drive_file_updated"
-        assert msgs[0].message.attributes["file_id"] == "jkl012"
+        assert msgs[0].headers["event"] == "drive_file_updated"
+        assert msgs[0].headers["file_id"] == "jkl012"
 
         assert mock_update_doc.call_args_list[0] == call(
             "watch",
             "drive_file_state",
             {"jkl012": {"name": "existing_file.txt", "md5": "jkl444"}},
+            replace=True,
         )
 
 
@@ -271,7 +274,7 @@ async def test_file_updated(client: AsyncClient, pubsub_helper: PubsubHelper) ->
 
 
 @pytest.mark.asyncio
-async def test_file_unchanged(client: AsyncClient, pubsub_helper: PubsubHelper) -> None:
+async def test_file_unchanged(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
         patch("webhook.integration.drive.connect") as mock_connect,
         patch("webhook.integration.drive.list_changes") as mock_list_changes,
@@ -297,11 +300,12 @@ async def test_file_unchanged(client: AsyncClient, pubsub_helper: PubsubHelper) 
             "updated": 0,
         }
 
-        msgs = pubsub_helper.pull()
+        msgs = await nats_helper.pull()
         assert len(msgs) == 0
 
         assert mock_update_doc.call_args_list[0] == call(
             "watch",
             "drive_file_state",
             {"mno345": {"name": "unchanged_file.txt", "md5": "mno555"}},
+            replace=True,
         )

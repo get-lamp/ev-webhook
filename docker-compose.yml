@@ -1,23 +1,16 @@
 services:
-  pubsub:
-    image: google/cloud-sdk:latest
-    container_name: webhook-pubsub
-    command: >
-      gcloud beta emulators pubsub start
-        --project=test-project
-        --host-port=0.0.0.0:8085
-    environment:
-      JAVA_TOOL_OPTIONS: "-Djava.util.logging.config.file=/tmp/logging.properties -Dio.netty.leakDetection.level=DISABLED"
+  nats:
+    image: nats:latest
+    container_name: webhook-nats
+    command: "--js"
     ports:
-      - "8085:8085"
-    volumes:
-      - ./infra/logging.properties:/tmp/logging.properties:ro
+      - "4222:4222"
     healthcheck:
-      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8085)); s.close()"]
+      test: ["CMD", "nats", "server", "check", "-a", "localhost:4222"]
       interval: 2s
       timeout: 5s
       retries: 15
-      start_period: 10s
+      start_period: 5s
     networks:
       - local-dev
 
@@ -49,7 +42,7 @@ services:
       - .env
     environment:
       ENVIRONMENT: local
-      PUBSUB_EMULATOR_HOST: pubsub:8085
+      NATS_URL: nats://nats:4222
       FIRESTORE_EMULATOR_HOST: firestore:8556
       GCP_PROJECT_ID: test-project
       WATCH_FOLDER_LOCAL: /blueprints
@@ -63,7 +56,7 @@ services:
       - ../_blueprints:/blueprints
       - ../_parts:/parts
     depends_on:
-      pubsub:
+      nats:
         condition: service_healthy
       firestore:
         condition: service_healthy

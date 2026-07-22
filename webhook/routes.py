@@ -72,6 +72,6 @@ async def trello_updated(request: Request) -> dict:
         member,
     )
 
-    published = pubsub.push_trello_updated(body)
+    published = await pubsub.push_trello_updated(body)
 
     return {"status": "ok", "action_type": action_type, "published": published}

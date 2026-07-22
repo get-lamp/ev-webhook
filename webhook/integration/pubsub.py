@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import time
@@ -15,7 +16,7 @@ async def ensure_topics() -> None:
     """No-op in production — topics are managed by Terraform."""
 
 
-def _publish(
+async def _publish(
     topic_name: str, payload: BaseModel, attributes: dict | None = None
 ) -> int:
     """Publish a JSON message to a PubSub topic. Returns 1 on success, 0 if skipped."""
@@ -33,7 +34,7 @@ def _publish(
 
     payload_bytes = payload.model_dump_json(exclude_none=True).encode()
     future = publisher.publish(topic_path, payload_bytes, **attrs)
-    future.result()
+    await asyncio.to_thread(future.result)
     logger.info(
         "_publish: topic=%s attrs=%s payload=%s",
         topic_name,
@@ -50,11 +51,11 @@ def _make_entry(name: str, md5: str) -> dict:
     return {"name": name, "md5": md5}
 
 
-def publish_drive_file_added(
+async def publish_drive_file_added(
     file_id: str, name: str, folder_id: str, md5: str, cache: dict
 ) -> None:
     """Handle an added file: publish event and record in the cache."""
-    _publish(
+    await _publish(
         "drive-updated",
         DriveUpdatedTopicSchema(
             file_id=file_id,
@@ -68,7 +69,7 @@ def publish_drive_file_added(
     logger.info("publish_drive_file_added: file_id=%s name=%s", file_id, name)
 
 
-def publish_drive_file_removed(
+async def publish_drive_file_removed(
     file_id: str,
     cached_name: str | None,
     fallback_name: str,
@@ -77,7 +78,7 @@ def publish_drive_file_removed(
 ) -> None:
     """Handle a removed file: publish event and drop from the cache."""
     name = cached_name or fallback_name
-    _publish(
+    await _publish(
         "drive-updated",
         DriveUpdatedTopicSchema(
             file_id=file_id,
@@ -91,7 +92,7 @@ def publish_drive_file_removed(
     logger.info("publish_drive_file_removed: file_id=%s name=%s", file_id, name)
 
 
-def publish_drive_file_renamed(
+async def publish_drive_file_renamed(
     file_id: str,
     old_name: str,
     new_name: str,
@@ -100,7 +101,7 @@ def publish_drive_file_renamed(
     cache: dict,
 ) -> None:
     """Handle a renamed file: publish event and update the cache."""
-    _publish(
+    await _publish(
         "drive-updated",
         DriveUpdatedTopicSchema(
             file_id=file_id,
@@ -120,11 +121,11 @@ def publish_drive_file_renamed(
     )
 
 
-def publish_drive_file_updated(
+async def publish_drive_file_updated(
     file_id: str, name: str, folder_id: str, md5: str, cache: dict
 ) -> None:
     """Handle an updated file: publish event and update the hash in cache."""
-    _publish(
+    await _publish(
         "drive-updated",
         DriveUpdatedTopicSchema(
             file_id=file_id,
@@ -141,7 +142,7 @@ def publish_drive_file_updated(
 # --- Trello events -----------------------------------------------------------
 
 
-def push_trello_updated(body: dict) -> int:
+async def push_trello_updated(body: dict) -> int:
     """Publish a Trello webhook payload to PubSub."""
     if not settings.GCP_PROJECT_ID:
         logger.warning("trello_updated: GCP_PROJECT_ID not set — cannot publish")
@@ -152,6 +153,6 @@ def push_trello_updated(body: dict) -> int:
     payload = json.dumps(body).encode()
 
     future = publisher.publish(topic, payload, event="trello_webhook")
-    future.result()
+    await asyncio.to_thread(future.result)
     logger.info("Published trello webhook event")
     return 1
