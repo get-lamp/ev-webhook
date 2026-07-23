@@ -93,7 +93,6 @@ async def client(
     with (
         patch("webhook.setup.drive_watch", new_callable=AsyncMock),
         patch("webhook.setup.trello_watch", new_callable=AsyncMock),
-        patch("webhook.integration.pubsub.settings.GCP_PROJECT_ID", TEST_PROJECT),
     ):
         async with LifespanManager(app):
             transport = ASGITransport(app=app)

@@ -101,8 +101,8 @@ async def test_health_returns_200(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_file_added(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
-        patch("webhook.integration.drive.connect") as mock_connect,
-        patch("webhook.integration.drive.list_changes") as mock_list_changes,
+        patch("webhook.services.drive.connect") as mock_connect,
+        patch("webhook.services.drive.list_changes") as mock_list_changes,
         patch("webhook.db.get_doc_data") as mock_get_doc,
         patch("webhook.db.update_doc") as mock_update_doc,
     ):
@@ -142,8 +142,8 @@ async def test_file_added(client: AsyncClient, nats_helper: NatsHelper) -> None:
 @pytest.mark.asyncio
 async def test_file_removed(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
-        patch("webhook.integration.drive.connect") as mock_connect,
-        patch("webhook.integration.drive.list_changes") as mock_list_changes,
+        patch("webhook.services.drive.connect") as mock_connect,
+        patch("webhook.services.drive.list_changes") as mock_list_changes,
         patch("webhook.db.get_doc_data") as mock_get_doc,
         patch("webhook.db.update_doc") as mock_update_doc,
     ):
@@ -182,8 +182,8 @@ async def test_file_removed(client: AsyncClient, nats_helper: NatsHelper) -> Non
 @pytest.mark.asyncio
 async def test_file_renamed(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
-        patch("webhook.integration.drive.connect") as mock_connect,
-        patch("webhook.integration.drive.list_changes") as mock_list_changes,
+        patch("webhook.services.drive.connect") as mock_connect,
+        patch("webhook.services.drive.list_changes") as mock_list_changes,
         patch("webhook.db.get_doc_data") as mock_get_doc,
         patch("webhook.db.update_doc") as mock_update_doc,
     ):
@@ -226,8 +226,8 @@ async def test_file_renamed(client: AsyncClient, nats_helper: NatsHelper) -> Non
 @pytest.mark.asyncio
 async def test_file_updated(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
-        patch("webhook.integration.drive.connect") as mock_connect,
-        patch("webhook.integration.drive.list_changes") as mock_list_changes,
+        patch("webhook.services.drive.connect") as mock_connect,
+        patch("webhook.services.drive.list_changes") as mock_list_changes,
         patch("webhook.db.get_doc_data") as mock_get_doc,
         patch("webhook.db.update_doc") as mock_update_doc,
     ):
@@ -276,8 +276,8 @@ async def test_file_updated(client: AsyncClient, nats_helper: NatsHelper) -> Non
 @pytest.mark.asyncio
 async def test_file_unchanged(client: AsyncClient, nats_helper: NatsHelper) -> None:
     with (
-        patch("webhook.integration.drive.connect") as mock_connect,
-        patch("webhook.integration.drive.list_changes") as mock_list_changes,
+        patch("webhook.services.drive.connect") as mock_connect,
+        patch("webhook.services.drive.list_changes") as mock_list_changes,
         patch("webhook.db.get_doc_data") as mock_get_doc,
         patch("webhook.db.update_doc") as mock_update_doc,
     ):

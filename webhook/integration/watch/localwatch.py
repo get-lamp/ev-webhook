@@ -71,7 +71,7 @@ async def create_watch_channel(
     On any file event the observer debounces then POSTs to *webhook_url*
     so the app processes the change through the normal request path.
     """
-    from webhook.integration.localdrive import _resolve_folder
+    from webhook.integration.drive.localdrive import _resolve_folder
 
     global _observer
 
