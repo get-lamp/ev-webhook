@@ -100,3 +100,26 @@ variable "workshop_service_account_id" {
   type        = string
   default     = "workshop"
 }
+
+# ── Cloudflare Tunnel ──────────────────────────────────────────────────────
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token with Tunnel and DNS permissions"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID"
+  type        = string
+}
+
+variable "cloudflare_zone_name" {
+  description = "Cloudflare DNS zone name (e.g., example.com)"
+  type        = string
+}
+
+variable "cloudflare_tunnel_domain" {
+  description = "Public hostname for the webhook tunnel (e.g., webhook.example.com)"
+  type        = string
+}

@@ -7,7 +7,7 @@ from google.cloud import pubsub_v1
 from pydantic import BaseModel
 
 from webhook.config import settings
-from webhook.schemas import DriveUpdatedTopicSchema
+from webhook.schemas.drive import DriveUpdatedTopicSchema
 
 logger = logging.getLogger(__name__)
 

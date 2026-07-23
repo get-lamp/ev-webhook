@@ -5,7 +5,7 @@ from webhook.integration import drive, pubsub
 
 logger = logging.getLogger(__name__)
 
-FILE_STATE_COLLECTION = "watch"
+FILE_STATE_COLLECTION = "drive_watch"
 FILE_STATE_DOC = "drive_file_state"
 
 
@@ -19,7 +19,7 @@ async def handle_drive_updated(channel_id: str, folder_id: str, state: str) -> d
     4. Update the page token and cache in Firestore.
     """
     drive_conn = drive.connect()
-    channel_data = await db.get_doc_data("watch", "drive_channel")
+    channel_data = await db.get_doc_data("drive_watch", "drive_channel")
 
     page_token = channel_data.get("page_token", "") if channel_data else ""
     logger.info("handle_drive_updated: state=%s page_token=%s", state, page_token)
@@ -86,7 +86,7 @@ async def handle_drive_updated(channel_id: str, folder_id: str, state: str) -> d
     # Persist updated cache and page token.
     # Replace (not merge) so that cache.pop() removals are actually deleted.
     await db.update_doc(FILE_STATE_COLLECTION, FILE_STATE_DOC, cache, replace=True)
-    await db.update_doc("watch", "drive_channel", {"page_token": new_page_token})
+    await db.update_doc("drive_watch", "drive_channel", {"page_token": new_page_token})
 
     logger.info(
         "handle_drive_updated: processed added=%d removed=%d renamed=%d updated=%d",

@@ -20,7 +20,9 @@ def _require_nats() -> str:
     """Return the NATS URL if a server is reachable, otherwise skip tests."""
     url = os.environ.get("NATS_URL", DEFAULT_NATS_URL)
     try:
-        asyncio.run(_probe_nats(url))
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(_probe_nats(url))
+        loop.close()
     except Exception:
         pytest.skip(f"NATS server not reachable at {url}")
     return url
@@ -89,7 +91,8 @@ async def client(
 ) -> AsyncGenerator[AsyncClient, None]:
     os.environ.setdefault("NATS_URL", nats_server)
     with (
-        patch("webhook.setup.watch", new_callable=AsyncMock),
+        patch("webhook.setup.drive_watch", new_callable=AsyncMock),
+        patch("webhook.setup.trello_watch", new_callable=AsyncMock),
         patch("webhook.integration.pubsub.settings.GCP_PROJECT_ID", TEST_PROJECT),
     ):
         async with LifespanManager(app):

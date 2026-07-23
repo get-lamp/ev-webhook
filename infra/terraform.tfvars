@@ -25,3 +25,8 @@ trello_board_id  = ""
 
 drive_push_endpoint_url  = ""
 trello_push_endpoint_url = ""
+
+# ── Cloudflare Tunnel ───────────────────────────────────────────────────────
+
+cloudflare_zone_name     = ""
+cloudflare_tunnel_domain = ""

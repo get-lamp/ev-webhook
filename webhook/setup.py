@@ -21,20 +21,23 @@ def routing(app):
     app.include_router(routes.router_trello)
 
 
-async def watch():
+async def drive_watch():
     # --- Ensure PubSub emulator topics exist ---
     await pubsub.ensure_topics()
 
-    # --- Drive watch channel ---
+    # --- Drive drive_watch channel ---
     cnx = connect()
 
     await create_watch_channel(
         cnx, settings.DRIVE_WEBHOOK_URL, settings.WATCH_FOLDER_ID
     )
 
+
+async def trello_watch():
+
     # --- Trello webhook ---
-    if settings.ENVIRONMENT == "local":
-        logger.info("trello_watch: skipping — ENVIRONMENT is local")
+    if settings.ENVIRONMENT == "local" and not settings.CLOUDFLARE_TUNNEL_ENABLED:
+        logger.info("trello_watch: skipping — ENVIRONMENT is local and tunnel disabled")
         return
 
     stored = await get_trello_webhook_data()

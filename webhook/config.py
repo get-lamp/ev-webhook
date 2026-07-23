@@ -25,6 +25,11 @@ class Settings(BaseSettings):
 
     NATS_URL: str = "nats://localhost:4222"
 
+    CLOUDFLARE_ACCOUNT_ID: str = ""
+    CLOUDFLARE_API_TOKEN: str = ""
+    CLOUDFLARE_TUNNEL_TOKEN: str = ""
+    CLOUDFLARE_TUNNEL_ENABLED: bool = False
+
     TRELLO_API_TOKEN: str
     TRELLO_API_KEY: str
     TRELLO_API_SECRET: str = ""

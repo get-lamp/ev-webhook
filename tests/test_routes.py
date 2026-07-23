@@ -129,7 +129,7 @@ async def test_file_added(client: AsyncClient, nats_helper: NatsHelper) -> None:
         assert msgs[0].headers["file_id"] == "abc123"
 
         assert mock_update_doc.call_args_list[0] == call(
-            "watch",
+            "drive_watch",
             "drive_file_state",
             {"abc123": {"name": "new_file.txt", "md5": "abc111"}},
             replace=True,
@@ -172,7 +172,7 @@ async def test_file_removed(client: AsyncClient, nats_helper: NatsHelper) -> Non
         assert msgs[0].headers["event"] == "drive_file_removed"
 
         assert mock_update_doc.call_args_list[0] == call(
-            "watch", "drive_file_state", {}, replace=True
+            "drive_watch", "drive_file_state", {}, replace=True
         )
 
 
@@ -213,7 +213,7 @@ async def test_file_renamed(client: AsyncClient, nats_helper: NatsHelper) -> Non
         assert msgs[0].headers["event"] == "drive_file_renamed"
 
         assert mock_update_doc.call_args_list[0] == call(
-            "watch",
+            "drive_watch",
             "drive_file_state",
             {"ghi789": {"name": "renamed_file.txt", "md5": "ghi333"}},
             replace=True,
@@ -263,7 +263,7 @@ async def test_file_updated(client: AsyncClient, nats_helper: NatsHelper) -> Non
         assert msgs[0].headers["file_id"] == "jkl012"
 
         assert mock_update_doc.call_args_list[0] == call(
-            "watch",
+            "drive_watch",
             "drive_file_state",
             {"jkl012": {"name": "existing_file.txt", "md5": "jkl444"}},
             replace=True,
@@ -304,7 +304,7 @@ async def test_file_unchanged(client: AsyncClient, nats_helper: NatsHelper) -> N
         assert len(msgs) == 0
 
         assert mock_update_doc.call_args_list[0] == call(
-            "watch",
+            "drive_watch",
             "drive_file_state",
             {"mno345": {"name": "unchanged_file.txt", "md5": "mno555"}},
             replace=True,

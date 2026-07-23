@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from httpx import AsyncClient
 from pydantic import BaseModel
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from webhook import db
 from webhook.config import settings
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 TRELLO_API_BASE = "https://api.trello.com/1"
 
 # Firestore collection/doc for stored webhook state
-TRELLO_WEBHOOK_COLLECTION = "watch"
+TRELLO_WEBHOOK_COLLECTION = "drive_watch"
 TRELLO_WEBHOOK_DOC = "trello_webhook"
 
 
@@ -50,10 +51,16 @@ async def list_webhooks() -> list[dict]:
         return data
 
 
-async def create_webhook(
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+    reraise=True,
+)
+async def register_webhook(
     callback_url: str, board_id: str, description: str = "aibiz-webhook"
 ) -> dict:
-    """Register a new Trello webhook.
+    """Register a new Trello webhook. Retries with backoff in case the
+    tunnel / callback URL is not yet reachable when Trello validates it.
 
     POST /1/webhooks
     """
@@ -68,9 +75,15 @@ async def create_webhook(
         resp = await client.post(
             f"{TRELLO_API_BASE}/webhooks", params=params, json=body
         )
+        if resp.is_error:
+            logger.error(
+                "register_webhook: Trello returned %d: %s",
+                resp.status_code,
+                resp.text,
+            )
         resp.raise_for_status()
         data = resp.json()
-        logger.info("create_webhook: id=%s callback=%s", data.get("id"), callback_url)
+        logger.info("register_webhook: id=%s callback=%s", data.get("id"), callback_url)
         return data
 
 
@@ -127,21 +140,20 @@ async def create_trello_webhook() -> bool:
 
     Returns True on success, False on failure.
     """
-    callback_url = settings.TRELLO_WEBHOOK_URL
 
     logger.info(
         "create_trello_webhook: board=%s callback=%s",
         settings.TRELLO_BOARD_ID,
-        callback_url,
+        settings.TRELLO_WEBHOOK_URL,
     )
 
     try:
-        result = await create_webhook(
-            callback_url=callback_url,
+        result = await register_webhook(
+            callback_url=settings.TRELLO_WEBHOOK_URL,
             board_id=settings.TRELLO_BOARD_ID,
         )
-    except Exception:
-        logger.exception("create_trello_webhook: API call failed")
+    except Exception as err:
+        logger.exception(f"create_trello_webhook: API call failed: {err}")
         return False
 
     now_iso = datetime.now(UTC).replace(microsecond=0).isoformat()
@@ -151,7 +163,7 @@ async def create_trello_webhook() -> bool:
         {
             "webhook_id": result.get("id", ""),
             "description": result.get("description", ""),
-            "callback_url": result.get("callbackURL", callback_url),
+            "callback_url": result.get("callbackURL", settings.TRELLO_WEBHOOK_URL),
             "board_id": result.get("idModel", settings.TRELLO_BOARD_ID),
             "active": result.get("active", True),
             "updated_at": now_iso,

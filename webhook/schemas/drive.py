@@ -1,5 +1,3 @@
-"""Pydantic schemas for PubSub message payloads."""
-
 from typing import Literal
 
 from pydantic import BaseModel

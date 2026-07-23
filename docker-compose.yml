@@ -44,11 +44,8 @@ services:
       ENVIRONMENT: local
       NATS_URL: nats://nats:4222
       FIRESTORE_EMULATOR_HOST: firestore:8556
-      GCP_PROJECT_ID: test-project
       WATCH_FOLDER_LOCAL: /blueprints
-      DRIVE_WEBHOOK_URL: http://localhost:8080/drive/updated
       TOPIC_BLUEPRINT_PUSH_URL: http://workshop-app:8000/blueprints/files-updated
-      TRELLO_WEBHOOK_URL: http://localhost:8080/trello/updated
     ports:
       - "8080:8080"
     volumes:

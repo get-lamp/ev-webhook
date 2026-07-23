@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request
 
 from webhook.config import settings
 from webhook.integration import pubsub
+from webhook.schemas.trello import TrelloWebhookPayload
 from webhook.services import handle_drive_updated
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ async def drive_updated(request: Request) -> dict:
         settings.GCP_PROJECT_ID or "<unset>",
     )
 
-    # files().watch() sends "change" (initial sync) and "update" (content changes).
+    # files().drive_watch() sends "change" (initial sync) and "update" (content changes).
     if state not in ("change", "update"):
         logger.info(
             "drive_watch: ignoring unhandled state=%s channel=%s", state, channel_id
@@ -52,17 +53,29 @@ async def drive_updated(request: Request) -> dict:
     return result
 
 
+@router_trello.head("/updated")
+async def acknowledge_webhook(request: Request) -> dict:
+    return {"status": "ok"}
+
+
 @router_trello.post("/updated")
 async def trello_updated(request: Request) -> dict:
+
     """Receive a Trello webhook notification and publish to PubSub."""
     body = await request.json()
-    action = body.get("action", {})
-    model = body.get("model", {})
+    payload = TrelloWebhookPayload(**body)
 
-    action_type = action.get("type", "unknown")
-    board_id = action.get("data", {}).get("board", {}).get("id", model.get("id", ""))
-    card_id = action.get("data", {}).get("card", {}).get("id", "")
-    member = action.get("memberCreator", {}).get("username", "unknown")
+    action = payload.action
+    data = action.data if action else None
+    board = data.board if data else None
+    card = data.card if data else None
+    creator = action.memberCreator if action else None
+    model = payload.model
+
+    action_type = action.type if action else "unknown"
+    board_id = board.id if board else (model.id if model else "")
+    card_id = card.id if card else ""
+    member = creator.username if creator else "unknown"
 
     logger.info(
         "trello_updated: type=%s board=%s card=%s member=%s",
@@ -73,5 +86,4 @@ async def trello_updated(request: Request) -> dict:
     )
 
     published = await pubsub.push_trello_updated(body)
-
     return {"status": "ok", "action_type": action_type, "published": published}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List the active Drive watch channel stored in Firestore.
+"""List the active Drive drive_watch channel stored in Firestore.
 
 Usage::
 
@@ -23,12 +23,12 @@ async def main() -> None:
     channel = await get_watcher_channel_data()
 
     if not channel:
-        print("No watch channel found in Firestore (watch/drive_channel).")
+        print("No drive_watch channel found in Firestore (drive_watch/drive_channel).")
         print("The app will create one automatically on startup.")
         sys.exit(1)
 
     print()
-    print("Drive watch channel (from Firestore watch/drive_channel):")
+    print("Drive drive_watch channel (from Firestore drive_watch/drive_channel):")
     print(f"  Channel ID:    {channel.channel_id}")
     print(f"  Resource ID:   {channel.resource_id}")
     print(f"  Resource URI:  {channel.resource_uri}")

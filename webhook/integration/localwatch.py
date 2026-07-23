@@ -1,6 +1,6 @@
 """Local filesystem-watcher implementation of the Watch integration.
 
-Drop-in replacement for ``webhook.integration.watch``.  Uses ``watchdog``
+Drop-in replacement for ``webhook.integration.drive_watch``.  Uses ``watchdog``
 to observe a local folder and fires HTTP POSTs to the app's own
 ``/drive/updated`` endpoint whenever a file changes.  The channel never
 expires.
@@ -52,7 +52,7 @@ class WatchChannelData(BaseModel):
 
 async def get_watcher_channel_data() -> WatchChannelData | None | bool:
     """Return stored channel data from Firestore, or None/False if absent."""
-    doc = (await db.get_doc("watch", "drive_channel")).get()
+    doc = (await db.get_doc("drive_watch", "drive_channel")).get()
     if not doc.exists:
         return False
     return WatchChannelData(**doc.to_dict())
@@ -102,7 +102,7 @@ async def create_watch_channel(
     now_iso = datetime.now(UTC).replace(microsecond=0).isoformat()
     now_ms = int(time.time() * 1000)
     await db.update_doc(
-        "watch",
+        "drive_watch",
         "drive_channel",
         {
             "channel_id": channel_id,

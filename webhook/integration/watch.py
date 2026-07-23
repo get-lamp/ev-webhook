@@ -27,7 +27,7 @@ class WatchChannelData(BaseModel):
 
 async def get_watcher_channel_data():
 
-    doc = (await db.get_doc("watch", "drive_channel")).get()
+    doc = (await db.get_doc("drive_watch", "drive_channel")).get()
 
     if not doc.exists:
         return False
@@ -57,7 +57,7 @@ async def create_watch_channel(drive, webhook_url, watch_folder_id) -> bool:
     try:
         channel = (
             drive.changes()
-            .watch(
+            .drive_watch(
                 fileId=watch_folder_id,
                 body={
                     "id": new_channel_id,
@@ -70,7 +70,7 @@ async def create_watch_channel(drive, webhook_url, watch_folder_id) -> bool:
         )
 
     except HttpError:
-        logger.exception("renew_drive_watch: changes().watch() failed")
+        logger.exception("renew_drive_watch: changes().drive_watch() failed")
         return False
 
     new_resource_id = channel.get("resourceId", "")
@@ -85,7 +85,7 @@ async def create_watch_channel(drive, webhook_url, watch_folder_id) -> bool:
 
     now_iso = datetime.now(UTC).replace(microsecond=0).isoformat()
     await db.update_doc(
-        "watch",
+        "drive_watch",
         "drive_channel",
         {
             "channel_id": new_channel_id,
