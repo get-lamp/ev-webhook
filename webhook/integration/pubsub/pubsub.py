@@ -142,17 +142,19 @@ async def publish_drive_file_updated(
 # --- Trello events -----------------------------------------------------------
 
 
-async def push_trello_updated(body: dict) -> int:
+async def push_trello_updated(
+    body: dict, topic: str = "trello-board-updated"
+) -> int:
     """Publish a Trello webhook payload to PubSub."""
     if not settings.GCP_PROJECT_ID:
         logger.warning("trello_updated: GCP_PROJECT_ID not set — cannot publish")
         return 0
 
     publisher = pubsub_v1.PublisherClient()
-    topic = publisher.topic_path(settings.GCP_PROJECT_ID, "trello-board-updated")
+    topic_path = publisher.topic_path(settings.GCP_PROJECT_ID, topic)
     payload = json.dumps(body).encode()
 
-    future = publisher.publish(topic, payload, event="trello_webhook")
+    future = publisher.publish(topic_path, payload, event="trello_webhook")
     await asyncio.to_thread(future.result)
-    logger.info("Published trello webhook event")
+    logger.info("Published trello webhook event to %s", topic)
     return 1

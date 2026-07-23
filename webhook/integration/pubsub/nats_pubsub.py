@@ -160,13 +160,11 @@ async def publish_drive_file_updated(
 # --- Trello events -----------------------------------------------------------
 
 
-async def push_trello_updated(body: dict) -> int:
-    """Publish a Trello webhook payload to NATS (now works in local dev)."""
+async def push_trello_updated(
+    body: dict, topic: str = "trello-board-updated"
+) -> int:
+    """Publish a Trello webhook payload to NATS."""
     payload_bytes = json.dumps(body).encode()
-    await _publish(
-        "trello-board-updated",
-        payload_bytes,
-        {"event": "trello_webhook"},
-    )
-    logger.info("push_trello_updated: published to trello-board-updated")
+    await _publish(topic, payload_bytes, {"event": "trello_webhook"})
+    logger.info("push_trello_updated: published to %s", topic)
     return 1

@@ -28,3 +28,11 @@ async def get_doc_data(collection, document="default") -> dict | None:
     """Read a Firestore document and return its data dict, or None."""
     doc = (await get_doc(collection, document)).get()
     return doc.to_dict() if doc.exists else None
+
+
+async def list_collection(collection: str) -> list[dict]:
+    """Return all documents in a collection as ``[{id, ...data}, ...]``."""
+    db = await connect()
+    return [
+        {"id": doc.id, **doc.to_dict()} for doc in db.collection(collection).stream()
+    ]

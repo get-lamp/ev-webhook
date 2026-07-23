@@ -33,7 +33,6 @@ class Settings(BaseSettings):
     TRELLO_API_TOKEN: str
     TRELLO_API_KEY: str
     TRELLO_API_SECRET: str = ""
-    TRELLO_BOARD_ID: str
 
 
 settings = Settings()

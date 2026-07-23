@@ -51,6 +51,20 @@ class TrelloModel(BaseModel):
     name: str | None = None
 
 
+class DashboardBoard(BaseModel):
+    """Board reference used in dashboard registration."""
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    name: str
+
+
+class TrelloRegisterRequest(BaseModel):
+    """``POST /trello/register`` request body."""
+    name: str
+    board: DashboardBoard
+
+
 class TrelloWebhookPayload(BaseModel):
     """Incoming Trello webhook body.
 

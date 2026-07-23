@@ -11,9 +11,12 @@ logger.setLevel(logging.INFO)
 
 
 async def _setup_watches() -> None:
-    await asyncio.sleep(0.5)
-    await setup.drive_watch()
-    await setup.trello_watch()
+    try:
+        await asyncio.sleep(0.5)
+        await setup.drive_watch()
+        await setup.trello_watch()
+    except Exception:
+        logger.exception("_setup_watches failed")
 
 
 @asynccontextmanager

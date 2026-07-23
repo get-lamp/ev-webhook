@@ -50,6 +50,16 @@ tunnel:
 	@echo ""
 	@echo "Tunnel is up — wait ~15s for connections to establish before restarting webhook."
 
+tunnel-status:
+	@if pgrep -x cloudflared > /dev/null 2>&1; then \
+		echo "cloudflared is running (PID $$(pgrep -x cloudflared))"; \
+		URL=$$(grep -oP 'TRELLO_WEBHOOK_URL=\K.*' .env | head -1); \
+		CODE=$$(curl -s -o /dev/null -w "%{http_code}" "$${URL}/health" 2>/dev/null || echo "unreachable"); \
+		echo "tunnel health: $$CODE"; \
+	else \
+		echo "cloudflared is NOT running"; \
+	fi
+
 tunnel-down:
 	@pgrep -x cloudflared | xargs -r kill 2>/dev/null || true
 	@rm -f /tmp/cloudflared.pid

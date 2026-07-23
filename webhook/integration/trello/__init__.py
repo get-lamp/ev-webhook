@@ -1,9 +1,10 @@
 from webhook.integration.trello.webhook import (
     TrelloWebhookData,
-    create_trello_webhook,
     delete_webhook,
-    get_trello_webhook_data,
+    get_dashboard_webhook,
     list_webhooks,
+    register_dashboard_webhook,
     register_webhook,
-    webhook_exists_in_trello,
+    sanity_check_and_store,
+    sync_dashboard_webhooks,
 )

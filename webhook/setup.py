@@ -4,11 +4,7 @@ from webhook import routes
 from webhook.config import settings
 from webhook.integration import pubsub
 from webhook.integration.drive import connect
-from webhook.integration.trello import (
-    create_trello_webhook,
-    get_trello_webhook_data,
-    webhook_exists_in_trello,
-)
+from webhook.integration.trello import sync_dashboard_webhooks
 from webhook.integration.watch import create_watch_channel
 
 logger = logging.getLogger(__name__)
@@ -34,26 +30,10 @@ async def drive_watch():
 
 
 async def trello_watch():
-
-    # --- Trello webhook ---
     if settings.ENVIRONMENT == "local" and not settings.CLOUDFLARE_TUNNEL_ENABLED:
         logger.info("trello_watch: skipping — ENVIRONMENT is local and tunnel disabled")
         return
 
-    stored = await get_trello_webhook_data()
-
-    if stored is not None:
-        logger.info("trello_watch: webhook already stored id=%s", stored.webhook_id)
-        return
-
-    callback_url = settings.TRELLO_WEBHOOK_URL
-
-    if await webhook_exists_in_trello(callback_url):
-        logger.info(
-            "trello_watch: webhook exists at Trello but not in Firestore — skipping"
-        )
-        return
-
-    logger.info("trello_watch: no webhook found — creating")
-    ok = await create_trello_webhook()
-    logger.info("trello_watch: created=%s", ok)
+    logger.info("trello_watch: syncing dashboard webhooks")
+    result = await sync_dashboard_webhooks()
+    logger.info("trello_watch: sync complete — %s", result)

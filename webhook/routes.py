@@ -4,7 +4,11 @@ from fastapi import APIRouter, Request
 
 from webhook.config import settings
 from webhook.integration import pubsub
-from webhook.schemas.trello import TrelloWebhookPayload
+from webhook.integration.trello import (
+    sanity_check_and_store,
+    sync_dashboard_webhooks,
+)
+from webhook.schemas.trello import TrelloRegisterRequest, TrelloWebhookPayload
 from webhook.services import handle_drive_updated
 
 logger = logging.getLogger(__name__)
@@ -85,5 +89,21 @@ async def trello_updated(request: Request) -> dict:
         member,
     )
 
-    published = await pubsub.push_trello_updated(body)
+    board_name = board.name if board else None
+    topic = f"dashboard-{board_name}" if board_name else "trello-board-updated"
+    published = await pubsub.push_trello_updated(body, topic=topic)
     return {"status": "ok", "action_type": action_type, "published": published}
+
+
+@router_trello.post("/register")
+async def trello_register(request: Request) -> dict:
+    """Receive board data from ev-dashboard and sync Trello webhooks."""
+    body = await request.json()
+    payload = TrelloRegisterRequest(**body)
+
+    updated = await sanity_check_and_store(
+        payload.name, payload.board.id, payload.board.name
+    )
+    result = await sync_dashboard_webhooks()
+
+    return {"status": "ok", "firestore_updated": updated, "sync": result}
