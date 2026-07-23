@@ -26,6 +26,7 @@ services:
       - "8556:8556"
     volumes:
       - ./infra/logging.properties:/tmp/logging.properties:ro
+      - firestore-data:/workspace/.firestore
     healthcheck:
       test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',8556)); s.close()"]
       interval: 2s
@@ -68,3 +69,6 @@ services:
 networks:
   local-dev:
     name: aibiz-local-dev
+
+volumes:
+  firestore-data:

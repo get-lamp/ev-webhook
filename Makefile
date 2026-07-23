@@ -43,27 +43,17 @@ trello-delete:
 
 # --- Cloudflare Tunnel --------------------------------------------------------
 
-.PHONY: tunnel-init tunnel-token tunnel-up tunnel-down
+.PHONY: tunnel tunnel-down
 
-tunnel-init:
-	@eval $$(grep -E '^CLOUDFLARE_(ACCOUNT_ID|API_TOKEN)=' .env) && \
-	cd infra && \
-	TF_VAR_cloudflare_api_token=$$CLOUDFLARE_API_TOKEN \
-	TF_VAR_cloudflare_account_id=$$CLOUDFLARE_ACCOUNT_ID \
-	terraform apply \
-		-target=cloudflare_zero_trust_tunnel_cloudflared.webhook \
-		-target=data.cloudflare_zero_trust_tunnel_cloudflared_token.webhook \
-		-target=cloudflare_zero_trust_tunnel_cloudflared_config.webhook \
-		-target=cloudflare_dns_record.webhook_tunnel
-
-tunnel-token:
-	@cd infra && echo "CLOUDFLARE_TUNNEL_TOKEN=$$(terraform output -raw cloudflare_tunnel_token)"
-
-tunnel-up:
-	docker compose --profile tunnel up -d
+tunnel:
+	pipenv run python scripts/tunnel
+	@echo ""
+	@echo "Tunnel is up — wait ~15s for connections to establish before restarting webhook."
 
 tunnel-down:
-	docker compose --profile tunnel down
+	@pgrep -x cloudflared | xargs -r kill 2>/dev/null || true
+	@rm -f /tmp/cloudflared.pid
+	@echo "cloudflared stopped"
 
 # --- GCP service account (run once) ------------------------------------------
 

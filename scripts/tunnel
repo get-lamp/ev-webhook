@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Start a Cloudflare Quick Tunnel, capture the URL, and update .env.
+
+Usage:
+    make tunnel          # via Makefile
+    python scripts/tunnel  # directly
+"""
+
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ENV_FILE = PROJECT_ROOT / ".env"
+TUNNEL_URL_TARGET = "http://localhost:8080"
+TIMEOUT = 30
+URL_PATTERN = re.compile(r"https://[a-z-]+\.trycloudflare\.com")
+
+
+def kill_existing() -> None:
+    """Kill any running cloudflared tunnel process.
+
+    Uses ``pgrep -x`` to match the exact binary name, not the command-line
+    arguments.  This avoids accidentally matching the current script or its
+    parent shell (whose argv can contain the pattern as a pgrep argument).
+    """
+    result = subprocess.run(
+        ["pgrep", "-x", "cloudflared"],
+        capture_output=True,
+        text=True,
+    )
+    for pid_str in result.stdout.strip().splitlines():
+        pid = int(pid_str)
+        if pid == os.getpid():
+            continue
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    time.sleep(1)
+
+
+def update_env(url: str) -> None:
+    """Replace DRIVE_WEBHOOK_URL and TRELLO_WEBHOOK_URL in the .env file."""
+    lines = ENV_FILE.read_text().splitlines()
+    updated = []
+    for line in lines:
+        if line.startswith("DRIVE_WEBHOOK_URL="):
+            updated.append(f"DRIVE_WEBHOOK_URL={url}/drive/updated")
+        elif line.startswith("TRELLO_WEBHOOK_URL="):
+            updated.append(f"TRELLO_WEBHOOK_URL={url}/trello/updated")
+        else:
+            updated.append(line)
+    ENV_FILE.write_text("\n".join(updated) + "\n")
+
+
+def main() -> None:
+    print("=== Killing existing cloudflared ===")
+    kill_existing()
+
+    log_file = Path("/tmp/cloudflared.log")
+    print(f"=== Starting cloudflared tunnel → {TUNNEL_URL_TARGET} ===")
+    proc = subprocess.Popen(
+        ["cloudflared", "tunnel", "--url", TUNNEL_URL_TARGET],
+        stdout=log_file.open("w"),
+        stderr=subprocess.STDOUT,
+        preexec_fn=os.setsid,
+    )
+
+    deadline = time.monotonic() + TIMEOUT
+    url: str | None = None
+
+    while url is None and time.monotonic() < deadline:
+        time.sleep(0.5)
+        try:
+            for line in log_file.read_text().splitlines():
+                match = URL_PATTERN.search(line)
+                if match:
+                    url = match.group(0)
+                    break
+        except FileNotFoundError:
+            pass
+
+    if url is None:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        proc.wait()
+        print("ERROR: Timed out waiting for tunnel URL", file=sys.stderr)
+        sys.exit(1)
+
+    assert url is not None
+    print(f"=== Tunnel URL: {url} ===")
+    update_env(url)
+    print(f"=== Updated {ENV_FILE} ===")
+    print(f"cloudflared PID: {proc.pid}")
+
+    # Write PID so make tunnel-down can find it
+    Path("/tmp/cloudflared.pid").write_text(str(proc.pid))
+
+
+if __name__ == "__main__":
+    main()
